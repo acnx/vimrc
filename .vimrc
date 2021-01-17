@@ -1,6 +1,3 @@
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" => General
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Sets how many lines of history VIM has to remember
 set history=1000
 
@@ -11,7 +8,6 @@ filetype indent on
 " Set to auto read when a file is changed from the outside
 set autoread
 au FocusGained,BufEnter * checktime
-
 " With a map leader it's possible to do extra key combinations
 " like <leader>w saves the current file
 let mapleader = ","
@@ -111,7 +107,7 @@ if $COLORTERM == 'gnome-terminal'
 endif
 
 
-set background=dark
+"set background=dark
 
 " Set extra options when running in GUI mode
 if has("gui_running")
@@ -146,9 +142,9 @@ set expandtab
 " Be smart when using tabs ;)
 set smarttab
 
-" 1 tab == 4 spaces
-set shiftwidth=4
-set tabstop=4
+" 1 tab == 2 spaces
+set shiftwidth=2
+set tabstop=2
 
 " Linebreak on 500 characters
 set lbr
@@ -197,7 +193,7 @@ map <leader>h :bprevious<cr>
 map <leader>tn :tabnew<cr>
 map <leader>to :tabonly<cr>
 map <leader>tc :tabclose<cr>
-map <leader>tm :tabmove 
+"map <leader>tm :tabmove 
 map <leader>t<leader> :tabnext
 
 " Let 'tl' toggle between this and the last accessed tab
@@ -296,6 +292,10 @@ map <leader>x :e ~/buffer.md<cr>
 map <leader>pp :setlocal paste!<cr>
 
 
+map <leader>tm :TableModeToggle<cr>
+
+
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " => Helper functions
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -370,7 +370,9 @@ function! ToggleVExplorer()
 endfunction
 map <silent> <C-E> :call ToggleVExplorer()<CR>
 
-
+map <silent> <C-f12> :call libcallnr("vimtweak64.dll", "SetAlpha", 210)<CR> 
+map <silent> <F11> :call libcallnr("vimtweak64.dll", "EnableMaximize", 1)<CR>
+map <silent> <S-F11> :call libcallnr("vimtweak64.dll", "EnableMaximize", 0)<CR>
 " Hit enter in the file browser to open the selected
 " file with :vsplit to the right of the browser.
 let g:netrw_browse_split = 4
@@ -383,15 +385,102 @@ let g:netrw_winsize = 25
 set autochdir
 
 syntax on
-set number
 filetype on
 set autoindent
 set smartindent
 set vb t_vb=
-set guifont=Consolas:h12:cDEFAULT
+set guifont=Consolas:h10:cDEFAULT
 colorscheme dark_plus
 set guioptions-=m
 set guioptions-=T
 set colorcolumn=80
 set guioptions-=r
 set guioptions-=L
+set linespace=4
+set lines=20 columns=90
+
+call plug#begin('$vim/vimfiles/plugged')
+Plug 'iamcco/mathjax-support-for-mkdp'
+Plug 'iamcco/markdown-preview.vim'
+Plug 'SirVer/ultisnips'
+"Plug 'honza/vim-snippets'
+Plug 'dhruvasagar/vim-table-mode'
+Plug 'mhinz/vim-signify', { 'branch': 'legacy' }
+Plug 'vimwiki/vimwiki'
+call plug#end()
+
+" Compile function
+map <F5> :call CompileRun()<CR>
+func! CompileRun()
+  exec "w"
+  if &filetype == 'c'
+    exec "!gcc % -o %<"
+    exec "!%<"
+  elseif &filetype == 'cpp'
+    exec "!g++ % -o %<"
+    exec "!%<"
+  elseif &filetype == 'java'
+    exec "!javac %"
+    exec "!java %<"
+  elseif &filetype == 'sh'
+    :!time bash %
+  elseif &filetype == 'python'
+    silent! exec "!clear"
+    exec "!python3 %"
+  elseif &filetype == 'html'
+    exec "!chrome % &"
+  elseif &filetype == 'markdown'
+    exec "MarkdownPreview"
+  elseif &filetype == 'vimwiki'
+    exec "MarkdownPreview"
+  endif
+endfunc
+
+map <leader>s :MarkdownPreviewStop<cr>
+
+let g:table_mode_corner = '|'
+let g:table_mode_border=0
+let g:table_mode_fillchar=' '
+ 
+function! s:isAtStartOfLine(mapping)
+  let text_before_cursor = getline('.')[0 : col('.')-1]
+  let mapping_pattern = '\V' . escape(a:mapping, '\')
+  let comment_pattern = '\V' . escape(substitute(&l:commentstring, '%s.*$', '', ''), '\')
+  return (text_before_cursor =~? '^' . ('\v(' . comment_pattern . '\v)?') . '\s*\v' . mapping_pattern . '\v$')
+endfunction
+ 
+inoreabbrev <expr> <bar><bar>
+          \ <SID>isAtStartOfLine('\|\|') ?
+          \ '<c-o>:TableModeEnable<cr><bar><space><bar><left><left>' : '<bar><bar>'
+inoreabbrev <expr> __
+          \ <SID>isAtStartOfLine('__') ?
+          \ '<c-o>:silent! TableModeDisable<cr>' : '__'
+
+
+
+exec 'cd ' . fnameescape('E:\')
+
+set nocompatible
+syntax on
+
+
+function! Fcitx2en()
+    let input_status = system('fcitx-remote')
+    if input_status == 2
+        let b:inputtoggle = 1
+        call system('fcitx-remote -c')
+    endif
+endfunction
+function! Fcitx2zh()
+    try
+	if b:inputtoggle == 1
+	    call system('fcitx-remote -o')
+	    let b:inputtoggle = 0
+	endif
+    catch /inputtoggle/
+        let b:inputtoggle = 0
+    endtry
+endfunction
+" Autocmds:
+au InsertLeave * call Fcitx2en()
+au InsertEnter * call Fcitx2zh()
